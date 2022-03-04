@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}
+{% if is_edit %}
+Редактирование поста
+{% else %}
+Новый пост
+{% endif %}
+{% endblock %}
+{% block content %}
+  {% if is_edit %}
+    {% include "includes/form.html" with entrance="Редактировать пост" button="Редактировать" %}
+  {% else %}
+    {% include "includes/form.html" with entrance="Добавить запись" button="Сохранить" %}
+  {% endif %}
+{% endblock %}
