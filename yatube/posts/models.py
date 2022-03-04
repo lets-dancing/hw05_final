@@ -80,7 +80,7 @@ class Comment(models.Model):
     class Meta:
         ordering = ('-created',)
 
-    
+
 class Follow(models.Model):
     user = models.ForeignKey(
         User,

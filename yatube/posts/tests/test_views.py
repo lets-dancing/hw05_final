@@ -272,10 +272,8 @@ class TestFollowPost(TestCase):
         )
 
     def test_auth_follow(self):
-        """ 
-        Авторизованный пользователь может подписываться на других
-        пользователей и удалять их из подписок.
-        """
+        """Авторизованный пользователь может подписываться на других
+        пользователей и удалять их из подписок."""
         following = User.objects.create(username='following')
         self.response_post(
             name='posts:profile_follow',
@@ -296,10 +294,8 @@ class TestFollowPost(TestCase):
         )
 
     def test_follow_new_post(self):
-        """ 
-        Новая запись пользователя появляется в ленте тех, кто на него
-        подписан и не появляется в ленте тех, кто не подписан на него.
-        """
+        """Новая запись пользователя появляется в ленте тех, кто на него
+        подписан и не появляется в ленте тех, кто не подписан на него."""
         following = User.objects.create(username='following')
         Follow.objects.create(user=self.user, author=following)
         post = Post.objects.create(author=following, text=self.text)
