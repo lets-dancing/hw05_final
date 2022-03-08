@@ -40,7 +40,7 @@ def profile(request, username):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     user = request.user
-    following = user.is_authenticated and author.following.exists()
+    following = user.is_authenticated and user.following.exists()
     context = {
         'author': author,
         'page_obj': page_obj,
@@ -53,14 +53,9 @@ def post_detail(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     form = CommentForm()
     comments = post.comments.all()
-    following = (
-        request.user.is_authenticated
-        and post.author.following.filter(user=request.user).exists()
-    )
     context = {
         'post': post,
         'comments': comments,
-        'following': following,
         'form': form
     }
     return render(request, 'posts/post_detail.html', context)
@@ -82,10 +77,6 @@ def post_create(request):
 @login_required
 def post_edit(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
-    following = (
-        request.user.is_authenticated
-        and post.author.following.filter(user=request.user).exists()
-    )
     form = PostForm(
         request.POST or None,
         files=request.FILES or None,
@@ -101,7 +92,6 @@ def post_edit(request, post_id):
         'is_edit': True,
         'form': form,
         'post': post,
-        'following': following,
     }
     return render(request, 'posts/create_post.html', context)
 
@@ -120,9 +110,7 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    user = request.user
-    authors = user.follower.values_list('author', flat=True)
-    posts_list = Post.objects.filter(author__id__in=authors)
+    posts_list = Post.objects.filter(author__following__user=request.user)
     paginator = Paginator(posts_list, POSTS_COUNT)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -152,5 +140,5 @@ def profile_follow(request, username):
 @login_required
 def profile_unfollow(request, username):
     user = request.user
-    Follow.objects.get(user=user, author__username=username).delete()
+    Follow.objects.filter(user=user, author__username=username).delete()
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))

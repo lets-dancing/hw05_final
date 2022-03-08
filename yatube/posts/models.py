@@ -38,19 +38,20 @@ class Post(models.Model):
     image = models.ImageField(
         'Картинка',
         upload_to='posts/',
-        blank=True
+        blank=True,
+        help_text='Вставьте картинку'
     )
+
+    class Meta:
+        ordering = ('-pub_date',)
+        verbose_name = 'Пост'
+        verbose_name_plural = 'Посты'
 
     def __str__(self):
         return self.text[:15]
 
     def get_absolute_url(self):
         return reverse('posts:post_detail', kwargs={'post_id': self.pk})
-
-    class Meta:
-        ordering = ('-pub_date',)
-        verbose_name = 'Пост'
-        verbose_name_plural = 'Посты'
 
 
 class Comment(models.Model):
@@ -70,15 +71,15 @@ class Comment(models.Model):
         help_text='Напишите текст комментария'
     )
     created = models.DateTimeField(
-        'date_created',
+        verbose_name='Дата добавления.',
         auto_now_add=True
     )
 
-    def get_absolute_url(self):
-        return reverse('posts:post_detail', kwargs={'post_id': self.pk})
-
     class Meta:
         ordering = ('-created',)
+
+    def get_absolute_url(self):
+        return reverse('posts:post_detail', kwargs={'post_id': self.pk})
 
 
 class Follow(models.Model):

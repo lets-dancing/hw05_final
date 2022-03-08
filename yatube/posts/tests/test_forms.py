@@ -27,33 +27,9 @@ class PostFormTests(TestCase):
             b'\x00\x00\x01\x00\x01\x00\x00\x02'
             b'\x02\x4c\x01\x00\x3b'
         )
-        cls.small_gif_old2 = (
-            b'\x47\x49\x46\x38\x39\x61\x01\x00'
-            b'\x01\x00\x00\x00\x00\x21\xf9\x04'
-            b'\x01\x0a\x00\x01\x00\x2c\x00\x00'
-            b'\x00\x00\x01\x00\x01\x00\x00\x02'
-            b'\x02\x4c\x01\x00\x3b'
-        )
-        cls.small_gif_new = (
-            b'\x47\x49\x46\x38\x39\x61\x01\x00'
-            b'\x01\x00\x00\x00\x00\x21\xf9\x04'
-            b'\x01\x0a\x00\x01\x00\x2c\x00\x00'
-            b'\x00\x00\x01\x00\x01\x00\x00\x02'
-            b'\x02\x4c\x01\x00\x3b'
-        )
         cls.uploaded_old1 = SimpleUploadedFile(
             name='small_old1.gif',
             content=cls.small_gif_old1,
-            content_type='image/gif'
-        )
-        cls.uploaded_old2 = SimpleUploadedFile(
-            name='small_old2.gif',
-            content=cls.small_gif_old2,
-            content_type='image/gif'
-        )
-        cls.uploaded_new = SimpleUploadedFile(
-            name='small_new.gif',
-            content=cls.small_gif_new,
             content_type='image/gif'
         )
         cls.group_old = Group.objects.create(
@@ -79,7 +55,7 @@ class PostFormTests(TestCase):
         form_data = {
             'text': 'test_new_post',
             'group': group_field,
-            'image': PostFormTests.uploaded_old2
+            'image': PostFormTests.uploaded_old1
         }
         response = PostFormTests.author_client.post(
             reverse('posts:post_create'),
@@ -87,17 +63,14 @@ class PostFormTests(TestCase):
             follow=True
         )
         post = Post.objects.get(id=1)
-        post_image = PostFormTests.uploaded_old1
+        post_image = form_data['image']
         self.assertRedirects(response, reverse('posts:profile',
                              args=[PostFormTests.author.username]))
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertEqual(post.author, self.author)
-        self.assertEqual(post.group, self.group_old)
+        self.assertEqual(post.author, PostFormTests.author)
+        self.assertEqual(post.group, PostFormTests.group_old)
         self.assertEqual(post.text, 'test_new_post')
-        self.assertEqual(
-            post_image.content_type,
-            self.uploaded_old2.content_type
-        )
+        self.assertEqual(post_image, PostFormTests.uploaded_old1)
 
     def test_create_post_not_auth_user(self):
         """

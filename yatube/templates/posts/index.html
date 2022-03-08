@@ -4,7 +4,7 @@
 {% block content %}
 {% load cache %}
 {% cache 20 index_page page%}
-{% include 'posts/includes/switcher.html' %}
+{% include 'posts/includes/switcher.html' with index=True follow=True %}
   {% for post in page_obj %}
   {% include 'posts/includes/post_list.html' %}
     {% if post.group %}   

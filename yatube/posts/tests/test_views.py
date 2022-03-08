@@ -14,7 +14,8 @@ from posts.models import Follow, Group, Post
 User = get_user_model()
 
 FIRST_PAGE_RECORDS = 10
-SECOND_PAGE_RECORDS = 4
+SECOND_PAGE_RECORDS = 3
+ALL_RECORDS_ON_PAGES = FIRST_PAGE_RECORDS + SECOND_PAGE_RECORDS
 
 
 class PostPagesTest(TestCase):
@@ -56,61 +57,26 @@ class PostPagesTest(TestCase):
             author=cls.author,
             image=cls.uploaded
         )
-        cls.templates_pages_names = {
-            reverse('posts:index'): 'posts/index.html',
-            reverse('posts:group_list',
-                    args=[cls.group.slug]
-                    ): 'posts/group_list.html',
-            reverse('posts:post_create'): 'posts/create_post.html',
-            reverse('posts:post_edit',
-                    kwargs={'post_id': cls.post.pk}
-                    ): 'posts/create_post.html',
-            reverse('posts:profile',
-                    args=[cls.author.username]
-                    ): 'posts/profile.html',
-            reverse('posts:post_detail',
-                    kwargs={'post_id': cls.post.pk}
-                    ): 'posts/post_detail.html'
-        }
-        cls.templates_for_pages_show = {
-            reverse('posts:index'): 'posts/index.html',
-            reverse('posts:group_list',
-                    args=[cls.group.slug]
-                    ): 'posts/group_list.html',
-            reverse('posts:profile',
-                    args=[cls.author.username]
-                    ): 'posts/profile.html',
-            reverse('posts:post_detail',
-                    kwargs={'post_id': cls.post.pk}
-                    ): 'posts/post_detail.html'
-        }
-        cls.templates_for_form = {
-            reverse('posts:post_create'): 'posts/create_post.html',
-            reverse('posts:post_edit',
-                    kwargs={'post_id': cls.post.pk}
-                    ): 'posts/create_post.html',
-        }
-        cls.templates_for_paginator = {
-            reverse('posts:index'): 'posts/index.html',
-            reverse('posts:group_list',
-                    args=[cls.group.slug]
-                    ): 'posts/group_list.html',
-            reverse('posts:profile',
-                    args=[cls.author.username]
-                    ): 'posts/profile.html',
-        }
+        cls.templates_for_pages_show = (
+            ('/', 'posts/index.html'),
+            (f'/group/{cls.group.slug}/', 'posts/group_list.html'),
+            (f'/profile/{cls.author.username}/', 'posts/profile.html'),
+            (f'/posts/{cls.post.pk}/', 'posts/post_detail.html')
+        )
+        cls.templates_for_form = (
+            ('/create/', 'posts/create_post.html'),
+            (f'/posts/{cls.post.pk}/edit/', 'posts/create_post.html'),
+        )
+        cls.templates_for_links = (
+            ('/', 'posts/index.html'),
+            (f'/group/{cls.group.slug}/', 'posts/group_list.html'),
+            (f'/profile/{cls.author.username}/', 'posts/profile.html'),
+        )
         cls.form_fields = {
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField,
             'image': forms.fields.ImageField,
         }
-        posts = [Post(
-            group=cls.group,
-            text='test_post',
-            author=cls.author)
-            for i in range(13)
-        ]
-        Post.objects.bulk_create(posts)
 
     @classmethod
     def tearDownClass(cls):
@@ -119,26 +85,20 @@ class PostPagesTest(TestCase):
 
     def test_pages_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
-        for (
-            reverse_name,
-            template
-        ) in PostPagesTest.templates_pages_names.items():
-            with self.subTest(template=template):
-                response = PostPagesTest.authorized_author_client.get(
-                    reverse_name
-                )
-                self.assertTemplateUsed(response, template)
+        templates_pages_names = (
+            PostPagesTest.templates_for_pages_show
+            + PostPagesTest.templates_for_form
+        )
+        for url, _ in templates_pages_names:
+            with self.subTest(template=_):
+                response = PostPagesTest.authorized_author_client.get(url)
+                self.assertTemplateUsed(response, _)
 
     def test_create_and_edit_post_show_correct_context(self):
         """Шаблон create_post и post_edit передает форму создания поста."""
-        for (
-            reverse_name,
-            template
-        ) in PostPagesTest.templates_for_form.items():
-            with self.subTest(template=template):
-                response = PostPagesTest.authorized_author_client.get(
-                    reverse_name
-                )
+        for url, _ in PostPagesTest.templates_for_form:
+            with self.subTest(template=_):
+                response = PostPagesTest.authorized_author_client.get(url)
         for value, expected in PostPagesTest.form_fields.items():
             with self.subTest(value=value):
                 form_field = response.context['form'].fields[value]
@@ -148,24 +108,20 @@ class PostPagesTest(TestCase):
         """
         Страницы отражают корректные ссылки
         """
-        for (
-            reverse_name,
-            template
-        ) in PostPagesTest.templates_for_pages_show.items():
-            with self.subTest(template=template):
-                response = PostPagesTest.guest_client.get(
-                    reverse_name
-                )
-        post = PostPagesTest.post
-        response_post = response.context.get('post')
-        post_author = response_post.author
-        post_group = response_post.group
-        post_text = response_post.text
-        post_image = response_post.image
-        self.assertEqual(post_author, PostPagesTest.author)
-        self.assertEqual(post_group, PostPagesTest.group)
-        self.assertEqual(post_text, post.text)
-        self.assertEqual(post_image, post.image)
+        for url, _ in PostPagesTest.templates_for_links:
+            with self.subTest(template=_):
+                response = PostPagesTest.guest_client.get(url)
+                post = PostPagesTest.post
+                response_post = response.context.get('page_obj').object_list[0]
+                post_author = response_post.author
+                post_group = response_post.group
+                post_text = response_post.text
+                post_image = response_post.image
+                self.assertEqual(post_author, PostPagesTest.author)
+                self.assertEqual(post_group, PostPagesTest.group)
+                self.assertEqual(post_text, post.text)
+                self.assertEqual(post_image, post.image)
+                self.assertContains(response, 'image')
 
     def test_group_list_show_group_posts(self):
         """
@@ -201,22 +157,6 @@ class PostPagesTest(TestCase):
         response_post = response.context.get('post')
         self.assertEqual(post, response_post)
 
-    def test_paginator(self):
-        pages = (
-            (1, FIRST_PAGE_RECORDS),
-            (2, SECOND_PAGE_RECORDS),
-        )
-        for page, count in pages:
-            for (
-                reverse_name,
-                template
-            ) in PostPagesTest.templates_for_paginator.items():
-                with self.subTest(template=template):
-                    response = PostPagesTest.guest_client.get(
-                        reverse_name, {'page': page}
-                    )
-        self.assertEqual(len(response.context['page_obj'].object_list), count)
-
     def test_cache_index(self):
         """Проверка хранения и очищения кэша для index."""
         response = PostPagesTest.authorized_author_client.get(
@@ -250,7 +190,7 @@ class TestFollowPost(TestCase):
         self.user = User.objects.create_user(username='user', password='pass')
         self.user.save()
         self.client.login(username='user', password='pass')
-        self.text = "text_test"
+        self.text = 'text_test'
 
     def response_get(self, name, rev_args=None, followed=True):
         return self.client.get(
@@ -274,12 +214,12 @@ class TestFollowPost(TestCase):
     def test_auth_follow(self):
         """Авторизованный пользователь может подписываться на других
         пользователей и удалять их из подписок."""
-        following = User.objects.create(username='following')
+        following = User.objects.create_user(username='following')
         self.response_post(
             name='posts:profile_follow',
             rev_args={'username': following}
         )
-        self.assertIs(
+        self.assertTrue(
             Follow.objects.filter(user=self.user, author=following).exists(),
             True
         )
@@ -288,7 +228,7 @@ class TestFollowPost(TestCase):
             name='posts:profile_unfollow',
             rev_args={'username': following}
         )
-        self.assertIs(
+        self.assertFalse(
             Follow.objects.filter(user=self.user, author=following).exists(),
             False
         )
@@ -296,17 +236,56 @@ class TestFollowPost(TestCase):
     def test_follow_new_post(self):
         """Новая запись пользователя появляется в ленте тех, кто на него
         подписан и не появляется в ленте тех, кто не подписан на него."""
-        following = User.objects.create(username='following')
+        following = User.objects.create_user(username='following')
         Follow.objects.create(user=self.user, author=following)
         post = Post.objects.create(author=following, text=self.text)
         response = self.response_get(name='posts:follow_index')
         self.assertIn(post, response.context['page_obj'].object_list)
 
         self.client.logout()
-        User.objects.create_user(
-            username='user_temp',
-            password='pass'
+        user = User.objects.create_user(
+            username='user_temp'
         )
-        self.client.login(username='user_temp', password='pass')
+        self.client.force_login(user)
         response = self.response_get(name='posts:follow_index')
         self.assertNotIn(post, response.context['page_obj'].object_list)
+
+
+class PaginatorViewsTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.author = User.objects.create_user(username='test_user')
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.author)
+        cls.group = Group.objects.create(
+            title='test_group',
+            slug='test-slug',
+            description='test_description'
+        )
+        cls.templates_for_paginator = (
+            ('/', 'posts/index.html'),
+            (f'/group/{cls.group.slug}/', 'posts/group_list.html'),
+            (f'/profile/{cls.author.username}/', 'posts/profile.html'),
+        )
+        posts = [Post(
+            group=PostPagesTest.group,
+            text='test_post',
+            author=PostPagesTest.author)
+            for i in range(ALL_RECORDS_ON_PAGES)
+        ]
+        Post.objects.bulk_create(posts)
+        pages = (
+            (1, FIRST_PAGE_RECORDS),
+            (2, SECOND_PAGE_RECORDS),
+        )
+        for url, _ in PaginatorViewsTest.templates_for_paginator:
+            with PaginatorViewsTest.subTest(template=_):
+                for page, count in pages:
+                    response = PostPagesTest.guest_client.get(
+                        url, {'page': page}
+                    )
+                    PaginatorViewsTest.assertEqual(
+                        len(response.context['page_obj'].object_list),
+                        count
+                    )

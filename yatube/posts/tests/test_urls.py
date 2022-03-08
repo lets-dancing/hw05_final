@@ -1,7 +1,7 @@
+from http import HTTPStatus
+
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
-
-from http import HTTPStatus
 
 from posts.models import Group, Post
 
@@ -104,7 +104,8 @@ class PostURLTests(TestCase):
         """
         for url, _ in PostURLTests.non_public_urls:
             response = PostURLTests.guest_client.get(url)
+            log_redirect = '/auth/login/?next='
             self.assertRedirects(
                 response,
-                '/auth/login/?next=' + url
+                f'{log_redirect}{url}'
             )

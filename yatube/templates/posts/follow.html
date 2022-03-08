@@ -3,7 +3,7 @@
 {% block title %}Все посты авторов, на которых Вы подписаны{% endblock %}
 {% block content %}
 {% load cache %}
-{% include 'posts/includes/switcher.html' %}
+{% include 'posts/includes/switcher.html' with index=True follow=True %}
   {% for post in page_obj %}
   {% include 'posts/includes/post_list.html' %}
     {% if post.group %}   

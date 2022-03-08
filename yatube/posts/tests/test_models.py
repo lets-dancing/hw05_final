@@ -18,7 +18,10 @@ class PostModelTest(TestCase):
         )
         cls.post = Post.objects.create(
             author=cls.user,
-            text='Тестовая пост',
+            # в комментарии написано "подлиннее",
+            # я посчитал что это опечатка и определил как "по длиннее".
+            # Правильно?))
+            text='Тестовый пост для проверки обрезки после 15 символов',
         )
 
     def test_verbose_name(self):
