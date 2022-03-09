@@ -63,14 +63,14 @@ class PostFormTests(TestCase):
             follow=True
         )
         post = Post.objects.get(id=1)
-        post_image = form_data['image']
         self.assertRedirects(response, reverse('posts:profile',
                              args=[PostFormTests.author.username]))
         self.assertEqual(Post.objects.count(), posts_count + 1)
         self.assertEqual(post.author, PostFormTests.author)
         self.assertEqual(post.group, PostFormTests.group_old)
         self.assertEqual(post.text, 'test_new_post')
-        self.assertEqual(post_image, PostFormTests.uploaded_old1)
+        response_post = response.context['post']
+        self.assertEqual(post.image, response_post.image)
 
     def test_create_post_not_auth_user(self):
         """

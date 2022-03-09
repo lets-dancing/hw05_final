@@ -57,17 +57,17 @@ class PostPagesTest(TestCase):
             author=cls.author,
             image=cls.uploaded
         )
-        cls.templates_for_pages_show = (
-            ('/', 'posts/index.html'),
-            (f'/group/{cls.group.slug}/', 'posts/group_list.html'),
-            (f'/profile/{cls.author.username}/', 'posts/profile.html'),
-            (f'/posts/{cls.post.pk}/', 'posts/post_detail.html')
-        )
+        # cls.templates_for_pages_show = (
+        #     ('/', 'posts/index.html'),
+        #     (f'/group/{cls.group.slug}/', 'posts/group_list.html'),
+        #     (f'/profile/{cls.author.username}/', 'posts/profile.html'),
+        #     (f'/posts/{cls.post.pk}/', 'posts/post_detail.html')
+        # )
         cls.templates_for_form = (
             ('/create/', 'posts/create_post.html'),
             (f'/posts/{cls.post.pk}/edit/', 'posts/create_post.html'),
         )
-        cls.templates_for_links = (
+        cls.templates_for_links_and_page = (
             ('/', 'posts/index.html'),
             (f'/group/{cls.group.slug}/', 'posts/group_list.html'),
             (f'/profile/{cls.author.username}/', 'posts/profile.html'),
@@ -86,8 +86,9 @@ class PostPagesTest(TestCase):
     def test_pages_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
         templates_pages_names = (
-            PostPagesTest.templates_for_pages_show
+            PostPagesTest.templates_for_links_and_page
             + PostPagesTest.templates_for_form
+            + ((f'/posts/{PostPagesTest.post.pk}/', 'posts/post_detail.html'),)
         )
         for url, _ in templates_pages_names:
             with self.subTest(template=_):
@@ -108,7 +109,7 @@ class PostPagesTest(TestCase):
         """
         Страницы отражают корректные ссылки
         """
-        for url, _ in PostPagesTest.templates_for_links:
+        for url, _ in PostPagesTest.templates_for_links_and_page:
             with self.subTest(template=_):
                 response = PostPagesTest.guest_client.get(url)
                 post = PostPagesTest.post
@@ -220,8 +221,7 @@ class TestFollowPost(TestCase):
             rev_args={'username': following}
         )
         self.assertTrue(
-            Follow.objects.filter(user=self.user, author=following).exists(),
-            True
+            Follow.objects.filter(user=self.user, author=following).exists()
         )
 
         self.response_post(
@@ -229,8 +229,7 @@ class TestFollowPost(TestCase):
             rev_args={'username': following}
         )
         self.assertFalse(
-            Follow.objects.filter(user=self.user, author=following).exists(),
-            False
+            Follow.objects.filter(user=self.user, author=following).exists()
         )
 
     def test_follow_new_post(self):
@@ -249,43 +248,3 @@ class TestFollowPost(TestCase):
         self.client.force_login(user)
         response = self.response_get(name='posts:follow_index')
         self.assertNotIn(post, response.context['page_obj'].object_list)
-
-
-class PaginatorViewsTest(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.author = User.objects.create_user(username='test_user')
-        cls.authorized_client = Client()
-        cls.authorized_client.force_login(cls.author)
-        cls.group = Group.objects.create(
-            title='test_group',
-            slug='test-slug',
-            description='test_description'
-        )
-        cls.templates_for_paginator = (
-            ('/', 'posts/index.html'),
-            (f'/group/{cls.group.slug}/', 'posts/group_list.html'),
-            (f'/profile/{cls.author.username}/', 'posts/profile.html'),
-        )
-        posts = [Post(
-            group=PostPagesTest.group,
-            text='test_post',
-            author=PostPagesTest.author)
-            for i in range(ALL_RECORDS_ON_PAGES)
-        ]
-        Post.objects.bulk_create(posts)
-        pages = (
-            (1, FIRST_PAGE_RECORDS),
-            (2, SECOND_PAGE_RECORDS),
-        )
-        for url, _ in PaginatorViewsTest.templates_for_paginator:
-            with PaginatorViewsTest.subTest(template=_):
-                for page, count in pages:
-                    response = PostPagesTest.guest_client.get(
-                        url, {'page': page}
-                    )
-                    PaginatorViewsTest.assertEqual(
-                        len(response.context['page_obj'].object_list),
-                        count
-                    )
