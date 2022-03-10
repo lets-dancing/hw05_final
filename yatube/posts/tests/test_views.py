@@ -57,12 +57,6 @@ class PostPagesTest(TestCase):
             author=cls.author,
             image=cls.uploaded
         )
-        # cls.templates_for_pages_show = (
-        #     ('/', 'posts/index.html'),
-        #     (f'/group/{cls.group.slug}/', 'posts/group_list.html'),
-        #     (f'/profile/{cls.author.username}/', 'posts/profile.html'),
-        #     (f'/posts/{cls.post.pk}/', 'posts/post_detail.html')
-        # )
         cls.templates_for_form = (
             ('/create/', 'posts/create_post.html'),
             (f'/posts/{cls.post.pk}/edit/', 'posts/create_post.html'),
@@ -71,6 +65,9 @@ class PostPagesTest(TestCase):
             ('/', 'posts/index.html'),
             (f'/group/{cls.group.slug}/', 'posts/group_list.html'),
             (f'/profile/{cls.author.username}/', 'posts/profile.html'),
+        )
+        cls.temp_post_detail = (
+            (f'/posts/{PostPagesTest.post.pk}/', 'posts/post_detail.html'),
         )
         cls.form_fields = {
             'text': forms.fields.CharField,
@@ -85,10 +82,11 @@ class PostPagesTest(TestCase):
 
     def test_pages_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
+
         templates_pages_names = (
             PostPagesTest.templates_for_links_and_page
             + PostPagesTest.templates_for_form
-            + ((f'/posts/{PostPagesTest.post.pk}/', 'posts/post_detail.html'),)
+            + PostPagesTest.temp_post_detail
         )
         for url, _ in templates_pages_names:
             with self.subTest(template=_):

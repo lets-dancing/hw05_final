@@ -9,9 +9,6 @@ FIRST_PAGE_RECORDS = 10
 SECOND_PAGE_RECORDS = 3
 ALL_RECORDS_ON_PAGES = FIRST_PAGE_RECORDS + SECOND_PAGE_RECORDS
 
-# Прошу прощения за прошлую версию теста паджинатора
-# не внимательно копипастил :(
-
 
 class PaginatorViewsTest(TestCase):
     @classmethod
